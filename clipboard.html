@@ -1,0 +1,195 @@
+<html>
+
+    <head>
+        <title>Clipboard</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link
+            href='https://fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,400italic,500,500italic,700,700italic,900italic,900'
+            rel='stylesheet' type='text/css'>
+        <link href="//cdn.materialdesignicons.com/5.4.55/css/materialdesignicons.min.css" media="all" rel="stylesheet"
+            type="text/css" />
+        <link href="/style.css" media="all" rel="stylesheet" type="text/css" />
+
+        <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+        <script>
+            window.onload = function () {
+                var app = new Vue({
+                    el: '#app',
+                    data: {
+                        tempLabel: '',
+                        tempContent: '',
+                        // {label, content, ts}
+                        labelContentArr: [],
+                        // For copy to clipboard
+                        textToCopy: '',
+                        showTempInput: false,
+                        message: '',
+                        // Drag and drop
+                        dragIndex: null,
+                        dragoverIndex: null
+                    },
+                    // Init
+                    mounted() {
+                        // Iterate on each key
+                        Object.keys(localStorage).forEach(key => {
+                            try {
+                                let tempObj = { label: key }
+                                Object.assign(tempObj, JSON.parse(localStorage.getItem(key)))
+                                // Push to array
+                                this.labelContentArr.push(tempObj)
+                            } catch (e) { }
+                        })
+
+                        // Sort by ts
+                        this.labelContentArr.sort((x, y) => x.ts - y.ts)
+                    },
+                    methods: {
+                        // Add key-value to list
+                        addToList() {
+                            // Timestamp
+                            let ts = Date.now()
+
+                            // If label already exists
+                            if (localStorage.getItem(this.tempLabel) !== null) {
+                                const confirmVal = confirm(`Are you sure you want to replace value of '${this.tempLabel}'?`)
+                                // Cancel next steps
+                                if (!confirmVal) return
+
+                                // Replace existing item
+                                let index = this.labelContentArr.findIndex(item => item.label == this.tempLabel)
+                                this.$set(this.labelContentArr[index], 'label', this.tempLabel)
+                                this.$set(this.labelContentArr[index], 'content', this.tempContent)
+
+                                // Update ts for localstorage
+                                ts = this.labelContentArr[index].ts
+                            } else {
+                                // Save new item to list
+                                this.labelContentArr.push({
+                                    label: this.tempLabel,
+                                    content: this.tempContent,
+                                    ts: ts
+                                })
+                            }
+
+                            // Save to localstorage
+                            this.saveToLocalStorage(this.tempLabel, this.tempContent, ts)
+
+                            // Reset values and focus to key input
+                            this.tempLabel = ''
+                            this.tempContent = ''
+                            this.$refs.tempLabel.focus()
+                        },
+                        // Delete pair
+                        deleteFromList(index) {
+                            // Find item
+                            const label = this.labelContentArr[index].label
+                            const confirmVal = confirm(`Are you sure you want to delete '${label}'?`)
+                            if (confirmVal) {
+                                this.$delete(this.labelContentArr, index)
+                                localStorage.removeItem(label)
+                            }
+                        },
+                        // Copy to clipboard
+                        copyToClipboard(text) {
+                            // Shoe temp input
+                            this.showTempInput = true
+                            this.textToCopy = text
+
+                            // On next tick
+                            this.$nextTick(() => {
+                                // Set value to text box
+                                let el = this.$refs.clipBoardInput
+                                // Copy value of textbox to clipboard
+                                el.select()
+                                document.execCommand("copy")
+                                // Hide temp input
+                                this.showTempInput = false
+                            })
+
+                            // Show message
+                            this.showMessage(`Copied to clipboard "${text}"`)
+                        },
+                        // On Drag
+                        drag(e, index) {
+                            this.dragIndex = index
+                        },
+                        // On Dragover
+                        dragover(e, index) {
+                            this.dragoverIndex = index
+                            if (this.dragIndex != this.dragoverIndex)
+                                this.swap(this.dragIndex, this.dragoverIndex)
+                        },
+                        // On Dragend
+                        dragend() {
+                            // Sorted timestamps
+                            let tsArr = this.labelContentArr.map(x => x.ts).sort((x, y) => x - y)
+                            // Assign timestamp to each element
+                            this.labelContentArr.forEach((item, i) => {
+                                this.$set(this.labelContentArr[i], 'ts', tsArr[i])
+                                this.saveToLocalStorage(item.label, item.content, tsArr[i])
+                            })
+                        },
+                        // Swap elements
+                        swap(index1, index2) {
+                            let tempObj = this.labelContentArr[index1]
+                            this.$set(this.labelContentArr, index1, this.labelContentArr[index2])
+                            this.$set(this.labelContentArr, index2, tempObj)
+                        },
+                        // Show message
+                        showMessage(message, timeout = 1000) {
+                            this.message = message
+                            setTimeout(() => { this.message = '' }, timeout)
+                        },
+                        // Save to local storage
+                        saveToLocalStorage(label, content, ts) {
+                            // Save to localstorage
+                            localStorage.setItem(label, JSON.stringify({ content, ts }))
+                        }
+                    }
+                })
+            }
+        </script>
+    </head>
+
+    <body>
+        <div id="app" class="mt-8 ml-8" v-cloak>
+            <!-- // Temp textbox to copy text to clipboard -->
+            <input type="text" ref='clipBoardInput' v-show='showTempInput' v-model='textToCopy' />
+            <!-- // List of key value -->
+            <ul class="mt-4 no-bullets">
+                <template v-for='(item, index) in labelContentArr'>
+                    <!-- // List item -->
+                    <li draggable="true" class="row" :key="`item-${item.ts}`" @drag='drag($event, index)'
+                        @dragover='dragover($event, index)' @dragend='dragend'>
+                        <!-- // Delete icon -->
+                        <span class="mdi mdi-minus-circle-outline cursor-pointer" title='Delete'
+                            @click='deleteFromList(index)'></span>&nbsp;&nbsp;
+                        <!-- // Label and Content -->
+                        <label class="cursor-pointer font-weight-medium" @click='copyToClipboard(item.label)'>
+                            {{ item.label }}
+                        </label>:
+                        <label class="cursor-pointer" @click='copyToClipboard(item.content)'>
+                            {{ item.content }}
+                        </label>
+                    </li>
+                </template>
+            </ul>
+            <!-- // Instructions -->
+            <div class="row mt-4" v-if='labelContentArr.length > 0'>
+                Click any label / value to copy...
+                Click <span class="mdi mdi-minus-circle-outline"></span> to delete label-value.
+                Drag to move label-value up / down.
+            </div>
+            <!-- // New key value -->
+            <div class="row">
+                <input type="text" ref='tempLabel' class="cb-label" placeholder="Label" v-model.trim='tempLabel' />
+                <input type="text" class="cb-value" placeholder="Value" v-model.trim='tempContent'
+                    v-on:keyup.enter="addToList" />
+                <input type="button" value="Add To List" @click='addToList'>
+            </div>
+            <!-- // Message -->
+            <div class="row mt-4 accent" v-if="message != ''">{{ message }}</div>
+        </div>
+    </body>
+
+</html>
