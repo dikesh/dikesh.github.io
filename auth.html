@@ -20,7 +20,7 @@
                         // Auth variables
                         clientId: localStorage.getItem('clientId') || '',
                         clientSecret: localStorage.getItem('clientSecret') || '',
-                        redirectUri: localStorage.getItem('redirectUri') || 'https://localhost/auth.html',
+                        redirectUri: localStorage.getItem('redirectUri') || `${window.location.origin}${window.location.pathname}`,
                         scopes: localStorage.getItem('scopes') || 'email',
                         // Auth responses
                         authCode: urlObj.searchParams.get('code'),
