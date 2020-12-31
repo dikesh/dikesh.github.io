@@ -1,4 +1,5 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 
     <head>
         <title>Clipboard</title>
@@ -97,10 +98,8 @@
 
                             // On next tick
                             this.$nextTick(() => {
-                                // Set value to text box
-                                let el = this.$refs.clipBoardInput
                                 // Copy value of textbox to clipboard
-                                el.select()
+                                this.$refs.clipBoardInput.select()
                                 document.execCommand("copy")
                                 // Hide temp input
                                 this.showTempInput = false
@@ -110,11 +109,11 @@
                             this.showMessage(`Copied to clipboard "${text}"`)
                         },
                         // On Drag
-                        drag(e, index) {
+                        drag(index) {
                             this.dragIndex = index
                         },
                         // On Dragover
-                        dragover(e, index) {
+                        dragover(index) {
                             this.dragoverIndex = index
                             if (this.dragIndex != this.dragoverIndex)
                                 this.swap(this.dragIndex, this.dragoverIndex)
@@ -159,8 +158,8 @@
             <ul class="mt-4 no-bullets">
                 <template v-for='(item, index) in labelContentArr'>
                     <!-- // List item -->
-                    <li draggable="true" class="row" :key="`item-${item.ts}`" @drag='drag($event, index)'
-                        @dragover='dragover($event, index)' @dragend='dragend'>
+                    <li draggable="true" class="row" :key="`item-${item.ts}`" @drag='drag(index)'
+                        @dragover='dragover(index)' @dragend='dragend'>
                         <!-- // Delete icon -->
                         <span class="mdi mdi-minus-circle-outline cursor-pointer" title='Delete'
                             @click='deleteFromList(index)'></span>&nbsp;&nbsp;
@@ -184,8 +183,8 @@
             <div class="row">
                 <input type="text" ref='tempLabel' class="cb-label" placeholder="Label" v-model.trim='tempLabel' />
                 <input type="text" class="cb-value" placeholder="Value" v-model.trim='tempContent'
-                    v-on:keyup.enter="addToList" />
-                <input type="button" value="Add To List" @click='addToList'>
+                    @keyup.enter="addToList" />
+                <input type="button" value="Add To List" @click='addToList' />
             </div>
             <!-- // Message -->
             <div class="row mt-4 accent" v-if="message != ''">{{ message }}</div>
