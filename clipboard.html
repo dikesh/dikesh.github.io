@@ -37,7 +37,7 @@
         </v-breadcrumbs>
         <v-container>
           <!-- // List of key value -->
-          <v-card v-if='labelContentArr.length > 0' class="mt-4 mx-auto" max-width='1000'>
+          <v-card v-if='labelContentArr.length > 0' class="mx-auto" max-width='1000'>
             <v-card-text>
               <template v-for='(item, index) in labelContentArr'>
                 <v-row draggable="true" @drag='drag(index)' @dragover='dragover(index)' @dragend='dragend'
@@ -66,7 +66,7 @@
             </v-card-text>
           </v-card>
           <!-- // New key value -->
-          <v-card class="mt-4 px-4 mx-auto" max-width='1000'>
+          <v-card :class="{'px-4 mx-auto': true, 'mt-4': labelContentArr.length > 0}" max-width='1000'>
             <v-card-text>
               <v-row no-gutters :align="'baseline'">
                 <v-col cols='12' md='3'>
