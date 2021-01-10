@@ -32,6 +32,9 @@
       </v-app-bar>
       <!-- // Main -->
       <v-main>
+        <v-breadcrumbs class="ml-8"
+          :items="[{text: 'Home', href: '/'}, {text: 'Clipboard', disabled: true, href: '/clipboard.html'}]">
+        </v-breadcrumbs>
         <v-container>
           <!-- // List of key value -->
           <v-card v-if='labelContentArr.length > 0' class="mt-4 mx-auto" max-width='1000'>
