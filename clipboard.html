@@ -81,7 +81,7 @@
             </v-card-text>
           </v-card>
           <!-- // Temp textbox to copy text to clipboard -->
-          <input type="text" ref='clipBoardInput' v-show='showTempInput' v-model='textToCopy' />
+          <input type="text" ref='clipBoardInput' v-show='showTempInput' v-model.trim='textToCopy' />
           <!-- // Snackbar -->
           <v-snackbar v-model="snackbar" :timeout="1500">{{ message }}</v-snackbar>
         </v-container>
@@ -172,24 +172,6 @@
           const confirmVal = confirm(`Are you sure you want to delete '${label}'?`)
           if (confirmVal) this.$delete(this.labelContentArr, index)
         },
-        // Copy to clipboard
-        copyToClipboard(text) {
-          // Shoe temp input
-          this.showTempInput = true
-          this.textToCopy = text
-
-          // On next tick
-          this.$nextTick(() => {
-            // Copy value of textbox to clipboard
-            this.$refs.clipBoardInput.select()
-            document.execCommand("copy")
-            // Hide temp input
-            this.showTempInput = false
-          })
-
-          // Show message
-          this.showMessage(`Copied to clipboard "${text}"`)
-        },
         // On Drag
         drag(index) {
           this.dragIndex = index
@@ -214,6 +196,24 @@
           let tempObj = this.labelContentArr[index1]
           this.$set(this.labelContentArr, index1, this.labelContentArr[index2])
           this.$set(this.labelContentArr, index2, tempObj)
+        },
+        // Copy to clipboard
+        copyToClipboard(text) {
+          // Shoe temp input
+          this.showTempInput = true
+          this.textToCopy = text
+
+          // On next tick
+          this.$nextTick(() => {
+            // Copy value of textbox to clipboard
+            this.$refs.clipBoardInput.select()
+            document.execCommand("copy")
+            // Hide temp input
+            this.showTempInput = false
+          })
+
+          // Show message
+          this.showMessage(`Copied to clipboard "${text}"`)
         },
         // Show message
         showMessage(message) {

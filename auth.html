@@ -1,173 +1,210 @@
 <!DOCTYPE html>
 <html lang="en">
 
-    <head>
-        <title>Auth</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link
-            href='https://fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,400italic,500,500italic,700,700italic,900italic,900'
-            rel='stylesheet' type='text/css'>
-        <link href="//cdn.materialdesignicons.com/5.4.55/css/materialdesignicons.min.css" media="all" rel="stylesheet"
-            type="text/css" />
-        <link href="/style.css" media="all" rel="stylesheet" type="text/css" />
+<head>
+  <title>Auth</title>
+  <link rel="icon" href="/favicon-32x32.png" type="image/gif" sizes="32x32">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.9.95/css/materialdesignicons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.4.2/dist/vuetify.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
 
-        <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-        <script>
-            window.onload = function () {
-                let urlObj = new URL(document.location.href)
-                var app = new Vue({
-                    el: '#app',
-                    data: {
-                        // Auth variables
-                        clientId: localStorage.getItem('clientId') || '',
-                        clientSecret: localStorage.getItem('clientSecret') || '',
-                        redirectUri: localStorage.getItem('redirectUri') || `${window.location.origin}${window.location.pathname}`,
-                        scopes: localStorage.getItem('scopes') || 'email',
-                        // Auth responses
-                        authCode: urlObj.searchParams.get('code'),
-                        accessToken: null,
-                        refreshToken: null,
-                        // For copy to clipboard
-                        textToCopy: '',
-                        showTempInput: false,
-                        message: '',
-                    },
-                    methods: {
-                        authorize: function () {
-                            // Save to localstorage
-                            localStorage.setItem('redirectUri', this.redirectUri)
-                            localStorage.setItem('scopes', this.scopes)
-                            localStorage.setItem('clientId', this.clientId)
+  <style>
+    [v-cloak] {
+      display: none;
+    }
+  </style>
+</head>
 
-                            // Build URL
-                            let authUrl = 'https://accounts.google.com/o/oauth2/v2/auth' +
-                                `?client_id=${this.clientId}` +
-                                `&redirect_uri=${this.redirectUri}` +
-                                `&response_type=code&scope=${this.scopes}` +
-                                '&access_type=offline&prompt=consent'
-                            // Redirect
-                            document.location.href = authUrl
-                        },
-                        // Fetch tokens
-                        fetchTokens() {
-                            // Save to localstorage
-                            localStorage.setItem('clientSecret', this.clientSecret)
+<body>
+  <!-- // App -->
+  <div id="app">
+    <v-app v-cloak>
+      <!-- // App Bar -->
+      <v-app-bar app>
+        <v-toolbar-title class="my-2 ml-md-8">
+          <v-img width="80px" src="/logo.png" />
+        </v-toolbar-title>
+        <v-spacer></v-spacer>
+        <v-btn @click='toggleTheme' class="mr-md-4" icon>
+          <v-icon>mdi-lightbulb-on</v-icon>
+        </v-btn>
+      </v-app-bar>
+      <!-- // Main -->
+      <v-main>
+        <v-breadcrumbs class="ml-md-8" :items="[{text: 'Home', href: '/'}, {text: 'Auth', disabled: true}]">
+        </v-breadcrumbs>
+        <v-container>
+          <!-- // Card -->
+          <v-card v-if='authCode != null' class="mx-auto" max-width='1000'>
+            <v-card-text>
+              <!-- // Auth Code and Tokens -->
+              <template v-for="key in ['authCode', 'accessToken', 'refreshToken']" :key="'row-'+key">
+                <v-row v-if='$data[key] != null' class="px-4 py-3" no-gutters>
+                  <v-col cols='12' md='3' class="font-weight-bold">
+                    <label role="button" @click='copyToClipboard($data[key])'>{{ keyText[key] }}</label>
+                  </v-col>
+                  <v-col cols='12' md='9'>
+                    <label role="button" @click='copyToClipboard($data[key])'>{{ $data[key] }}</label>
+                  </v-col>
+                </v-row>
+                <v-divider v-if='$data[key] != null' />
+              </template>
+              <!-- // Instructions -->
+              <v-row class="pt-8 ml-4 font-italic info--text" no-gutters>
+                Click any label to copy its value.
+              </v-row>
+            </v-card-text>
+          </v-card>
+          <!-- // Card -->
+          <v-card :class="{'px-4 pb-4 mx-auto': true, 'mt-4': authCode != null}" max-width='1000'>
+            <v-card-text>
+              <!-- // Redirect URI -->
+              <v-row no-gutters>
+                <v-text-field label='Redirect URI' v-model.trim='redirectUri'></v-text-field>
+              </v-row>
+              <!-- // Scopes -->
+              <v-row no-gutters>
+                <v-combobox chips deletable-chips small-chips multiple :delimiters="[',', '\n', ' ']"
+                  hint="Press comma / enter / space to enter multiple values" :append-icon='null' v-model='scopes'>
+                </v-combobox>
+              </v-row>
+              <!-- // Client ID -->
+              <v-row no-gutters>
+                <v-text-field label='Client ID' v-model.trim='clientId'></v-text-field>
+              </v-row>
+              <!-- // Client Secret -->
+              <v-row v-if='authCode != null' no-gutters>
+                <v-text-field label='Client Secret' v-model.trim='clientSecret'></v-text-field>
+              </v-row>
+              <!-- // Buttons -->
+            </v-card-text>
+            <v-card-actions class="pl-4">
+              <v-btn tile color='primary' @click="authorize" small>Authorize</v-btn>
+              <v-btn tile color='primary' @click="fetchTokens" :disabled='authCode == null || refreshToken != null'
+                small>Get Tokens</v-btn>
+            </v-card-actions>
+          </v-card>
+          <!-- // Temp textbox to copy text to clipboard -->
+          <input type="text" ref='clipBoardInput' v-show='showTempInput' v-model.trim='textToCopy' />
+          <!-- // Snackbar -->
+          <v-snackbar v-model="snackbar" :timeout="1500">{{ message }}</v-snackbar>
+        </v-container>
+      </v-main>
+    </v-app>
+  </div>
 
-                            let reqBody = `code=${this.authCode}&client_id=${this.clientId}` +
-                                `&client_secret=${this.clientSecret}&redirect_uri=${this.redirectUri}` +
-                                `&grant_type=authorization_code`
+  <!-- // JS Code -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vuetify@2.4.2/dist/vuetify.min.js"></script>
+  <script>
+    // URL Object to extract query params
+    let urlObj = new URL(document.location.href)
+    // Scopes
+    let scopes = ['email']
+    if (localStorage.getItem('scopes') !== null)
+      scopes = localStorage.getItem('scopes').split(',')
 
-                            // Fetch tokens
-                            fetch('https://oauth2.googleapis.com/token', {
-                                method: 'post',
-                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                body: reqBody
-                            })
-                                .then(res => res.json())
-                                .then(res => {
-                                    this.accessToken = res.access_token
-                                    this.refreshToken = res.refresh_token
-                                })
-                        },
-                        // Copy to clipboard
-                        copyToClipboard(text) {
-                            // Shoe temp input
-                            this.showTempInput = true
-                            this.textToCopy = text
+    var app = new Vue({
+      el: '#app',
+      vuetify: new Vuetify({
+        theme: {
+          dark: localStorage.getItem('lightTheme') != 'Yes'
+        }
+      }),
+      data() {
+        return {
+          keyText: {
+            authCode: 'Auth Code',
+            accessToken: 'Access Token',
+            refreshToken: 'Refresh Token',
+          },
+          // Auth variables
+          clientId: localStorage.getItem('clientId') || '',
+          clientSecret: localStorage.getItem('clientSecret') || '',
+          redirectUri: localStorage.getItem('redirectUri') || `${window.location.origin}${window.location.pathname}`,
+          scopes: scopes,
+          // Auth responses
+          authCode: urlObj.searchParams.get('code'),
+          accessToken: null,
+          refreshToken: null,
+          // For copy to clipboard
+          textToCopy: '',
+          showTempInput: false,
+          snackbar: false,
+          message: '',
+        }
+      },
+      methods: {
+        authorize: function () {
+          // Save to localstorage
+          localStorage.setItem('redirectUri', this.redirectUri)
+          localStorage.setItem('scopes', this.scopes.join(','))
+          localStorage.setItem('clientId', this.clientId)
 
-                            // On next tick
-                            this.$nextTick(() => {
-                                // Set value to text box
-                                let el = this.$refs.clipBoardInput
-                                // Copy value of textbox to clipboard
-                                el.select()
-                                document.execCommand("copy")
-                                // Hide temp input
-                                this.showTempInput = false
-                            })
+          // Build URL
+          let authUrl = 'https://accounts.google.com/o/oauth2/v2/auth' +
+            `?client_id=${this.clientId}` +
+            `&redirect_uri=${this.redirectUri}` +
+            `&scope=${this.scopes.join(' ')}` +
+            `&response_type=code` +
+            '&access_type=offline' +
+            '&prompt=consent'
+          // Redirect
+          document.location.href = authUrl
+        },
+        // Fetch tokens
+        fetchTokens() {
+          // Save to localstorage
+          localStorage.setItem('clientSecret', this.clientSecret)
 
-                            // Show message
-                            this.showMessage(`Copied to clipboard "${text}"`)
-                        },
-                        // Show message
-                        showMessage(message, timeout = 1000) {
-                            this.message = message
-                            setTimeout(() => { this.message = '' }, timeout)
-                        }
-                    }
-                })
-            }
-        </script>
-    </head>
+          let reqBody = `code=${this.authCode}&client_id=${this.clientId}` +
+            `&client_secret=${this.clientSecret}&redirect_uri=${this.redirectUri}` +
+            `&grant_type=authorization_code`
 
-    <body>
-        <div id="app" class="mt-8 ml-8" v-cloak>
-            <!-- // Temp textbox to copy text to clipboard -->
-            <input type="text" ref='clipBoardInput' v-show='showTempInput' v-model.trim='textToCopy' />
-            <!-- // Auth Code -->
-            <div class="row" v-if='authCode != null'>
-                <label class="cursor-pointer font-weight-medium lb-200" @click='copyToClipboard(authCode)'>
-                    Auth Code:
-                </label>
-                <label class="cursor-pointer" @click='copyToClipboard(authCode)'>
-                    {{ authCode }}
-                </label>
-            </div>
-            <!-- // Access and Refresh Tokens -->
-            <template v-if='accessToken != null'>
-                <div class="row">
-                    <label class="cursor-pointer font-weight-medium lb-200" @click='copyToClipboard(accessToken)'>
-                        Access Token:
-                    </label>
-                    <label class="cursor-pointer" @click='copyToClipboard(accessToken)'>
-                        {{ accessToken }}
-                    </label>
-                </div>
-                <div class="row">
-                    <label class="cursor-pointer font-weight-medium lb-200" @click='copyToClipboard(refreshToken)'>
-                        Refresh Token:
-                    </label>
-                    <label class="cursor-pointer" @click='copyToClipboard(refreshToken)'>
-                        {{ refreshToken }}
-                    </label>
-                </div>
-            </template>
-            <!-- // Redirect URI -->
-            <div class="row">
-                <label class="cursor-pointer font-weight-medium lb-200" @click='copyToClipboard(redirectUri)'>
-                    Redirect URI:
-                </label>
-                <input type="text" v-model.trim='redirectUri' class="tb-700" />
-            </div>
-            <!-- // Scopes -->
-            <div class="row">
-                <label class="cursor-pointer font-weight-medium lb-200" @click='copyToClipboard(scopes)'>Scopes:</label>
-                <input type="text" v-model.trim='scopes' class="tb-700" />
-            </div>
-            <!-- // Client ID -->
-            <div class="row">
-                <label class="cursor-pointer font-weight-medium lb-200" @click='copyToClipboard(clientId)'>
-                    Client ID:
-                </label>
-                <input type="text" v-model.trim='clientId' class="tb-700" />
-            </div>
-            <!-- // Client Secret -->
-            <div class="row" v-if='authCode != null'>
-                <label class="cursor-pointer font-weight-medium lb-200" @click='copyToClipboard(clientSecret)'>
-                    Client Secret:
-                </label>
-                <input type="text" v-model.trim='clientSecret' class="tb-700" />
-            </div>
-            <!-- // Instructions -->
-            <div class="row mt-4 accent">Click any label to copy its value.</div>
-            <!-- // Authorize -->
-            <div class="row">
-                <button type="button" @click="authorize">Authorize</button>
-                <button type="button" @click="fetchTokens" v-if='authCode != null'>Get Tokens</button>
-            </div>
-            <!-- // Message -->
-            <div class="row mt-4 accent" v-if="message != ''">{{ message }}</div>
-        </div>
-    </body>
+          // Fetch tokens
+          fetch('https://oauth2.googleapis.com/token', {
+            method: 'post',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: reqBody
+          })
+            .then(res => res.json())
+            .then(res => {
+              this.accessToken = res.access_token
+              this.refreshToken = res.refresh_token
+            })
+        },
+        // Copy to clipboard
+        copyToClipboard(text) {
+          // Shoe temp input
+          this.showTempInput = true
+          this.textToCopy = text
+
+          // On next tick
+          this.$nextTick(() => {
+            // Copy value of textbox to clipboard
+            this.$refs.clipBoardInput.select()
+            document.execCommand("copy")
+            // Hide temp input
+            this.showTempInput = false
+          })
+
+          // Show message
+          this.showMessage(`Copied to clipboard "${text}"`)
+        },
+        // Show message
+        showMessage(message) {
+          this.message = message
+          this.snackbar = true
+        },
+        // Toggle theme
+        toggleTheme() {
+          this.$vuetify.theme.dark = !this.$vuetify.theme.dark
+          localStorage.setItem('lightTheme', this.$vuetify.theme.dark ? 'No' : 'Yes')
+        }
+      }
+    })
+  </script>
+</body>
 
 </html>
