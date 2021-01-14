@@ -5,8 +5,8 @@
   <title>Clipboard</title>
   <link rel="icon" href="/favicon-32x32.png" type="image/gif" sizes="32x32">
   <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.9.95/css/materialdesignicons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.4.2/dist/vuetify.min.css" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
 
   <style>
@@ -22,18 +22,17 @@
     <v-app v-cloak>
       <!-- // App Bar -->
       <v-app-bar app>
-        <v-toolbar-title class="my-2 ml-8">
+        <v-toolbar-title class="my-2 ml-md-8">
           <v-img width="80px" src="/logo.png" />
         </v-toolbar-title>
         <v-spacer></v-spacer>
-        <v-btn @click='toggleTheme' class="mr-4" icon>
+        <v-btn @click='toggleTheme' class="mr-md-4" icon>
           <v-icon>mdi-lightbulb-on</v-icon>
         </v-btn>
       </v-app-bar>
       <!-- // Main -->
       <v-main>
-        <v-breadcrumbs class="ml-8"
-          :items="[{text: 'Home', href: '/'}, {text: 'Clipboard', disabled: true, href: '/clipboard.html'}]">
+        <v-breadcrumbs class="ml-md-8" :items="[{text: 'Home', href: '/'}, {text: 'Clipboard', disabled: true}]">
         </v-breadcrumbs>
         <v-container>
           <!-- // List of key value -->
@@ -43,15 +42,15 @@
                 <v-row draggable="true" @drag='drag(index)' @dragover='dragover(index)' @dragend='dragend'
                   class="px-4 py-3" :key="`item-${item.ts}`" no-gutters>
                   <!-- // Label -->
-                  <v-col md='3' class="font-weight-bold">
+                  <v-col cols='12' md='2' class="font-weight-bold">
                     <label role="button" @click='copyToClipboard(item.label)'>{{ item.label }}</label>
                   </v-col>
                   <!-- // Content -->
-                  <v-col offset-md='1' md='4'>
+                  <v-col offset-md='1' cols='10' md='7'>
                     <label role="button" @click='copyToClipboard(item.content)'>{{ item.content }}</label>
                   </v-col>
                   <!-- // Actions -->
-                  <v-col offset-md='1' md='3'>
+                  <v-col offset-md='1' cols='2' md='1'>
                     <v-sheet class="transparent d-flex justify-end">
                       <v-icon small @click="deleteFromList(index)" class="mr-1" title='Delete'>mdi-delete</v-icon>
                     </v-sheet>
@@ -91,8 +90,8 @@
   </div>
 
   <!-- // JS Code -->
-  <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vuetify@2.4.2/dist/vuetify.min.js"></script>
   <script>
     // Get array of label-content from storage
     function getLabelContentArrayFromStorage() {
