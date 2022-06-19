@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Word Finder</title>
+  <link rel="icon" href="/favicon-32x32.png" type="image/gif" sizes="32x32">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <style>
+    [v-cloak] {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- // App -->
+  <div id="app">
+    <!-- // Navbar -->
+    <nav class="navbar has-shadow is-dark" role="navigation" aria-label="main navigation">
+      <div class="container">
+        <div :class="['navbar-brand', {'ml-4': isMobile}]">
+          <img src="/logo.png" width="70">
+        </div>
+      </div>
+    </nav>
+    <!-- // Breadcrumb -->
+    <section class="section py-0">
+      <nav class="breadcrumb is-black mt-4" aria-label="breadcrumbs">
+        <div class="container">
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li class="is-active"><a href="#" aria-current="page">Word Finder</a></li>
+          </ul>
+        </div>
+      </nav>
+    </section>
+    <section class="section" v-cloak>
+      <div class="container">
+        <!-- // Form -->
+        <!-- // Word Length -->
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label">Length</label>
+          </div>
+          <div class="field-body">
+            <div class="field is-narrow">
+              <div class="control">
+                <input class="input" type="text" placeholder="Length"
+                  v-model.number="wordLength"
+                  @focus="prevWordLength = wordLength"
+                  @blur="lengthChanged">
+              </div>
+              <p class="help">Must be >= 2</p>
+            </div>
+          </div>
+        </div>
+        <!-- // Word -->
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label">Letters</label>
+          </div>
+          <div class="field-body">
+            <div class="field is-narrow">
+              <div class="control">
+                <input class="input" type="text" placeholder="Letters"
+                  v-model.trim="wordChars"
+                  @blur="wordChanged">
+              </div>
+              <p class="help">Max letters: {{wordLength}}</p>
+              <p class="help">* - Any Letter</p>
+            </div>
+          </div>
+        </div>
+        <!-- // Must have letters -->
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label">Must have Letters</label>
+          </div>
+          <div class="field-body">
+            <div class="field is-narrow">
+              <div class="control">
+                <input class="input" type="text" placeholder="Must have"
+                  v-model.trim="mustChars"
+                  @blur="mustCharsChanged">
+              </div>
+              <p class="help">Max letters: {{wordLength}}</p>
+            </div>
+          </div>
+        </div>
+        <!-- // Other Letters -->
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label">Can have Letters</label>
+          </div>
+          <div class="field-body">
+            <div class="field is-narrow">
+              <div class="control">
+                <input class="input" type="text"
+                  placeholder="Can have Letters"
+                  v-model.trim="canChars"
+                  @blur="canCharsChanged">
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- // Submit -->
+        <div class="field is-horizontal">
+          <div class="field-label">&nbsp;</div>
+          <div class="field-body">
+            <div class="field">
+              <div class="control">
+                <button class="button is-primary" @click="filterWords">
+                  Find Words
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- // Filtered Words -->
+        <div class="field is-horizontal">
+          <div class="field-label">&nbsp;</div>
+          <div class="field-body">
+            <div class="content">
+              <ul>
+                <li v-for="word in filteredWords.slice(0, 50)" :key="word">{{word}}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <!-- // JS Code -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.2.37/dist/vue.global.prod.js"></script>
+  <script>
+    // Utils
+    function isInteger(str) {
+      return /^\d+$/.test(str)
+    }
+
+    // Alpha string
+    const alphaStr = 'abcdefghijklmnopqrstuvwxyz'
+
+    // Vue App
+    const { createApp } = Vue
+    createApp({
+      data() {
+        return {
+          prevWordLength: 5,
+          wordLength: 5,
+          wordChars: "",
+          mustChars: "",
+          canChars: "",
+          allWords: [],
+          filteredWords: [],
+          isMobile: false
+        }
+      },
+      mounted() {
+        // Check is mobile
+        this.isMobile = window.matchMedia("only screen and (max-width: 760px)").matches
+
+        // Reset fields
+        this.resetFields()
+
+        // Fetch words
+        fetch('/words_alpha.txt')
+          .then(res => res.text())
+          .then(data => (this.allWords = data.split('\n').map(x => x.trim())))
+      },
+      methods: {
+        // Reset fields
+        resetFields() {
+          // Fill word
+          this.wordChars = '*'.repeat(this.wordLength)
+          this.mustChars = ""
+          this.canChars = ""
+        },
+        // Length Changed
+        lengthChanged() {
+          // Validate and reset
+          if (!isInteger(this.wordLength) || this.wordLength < 2)
+            this.wordLength = this.prevWordLength
+
+          // Skip if length unchanged
+          if (this.wordLength == this.prevWordLength) return
+          this.resetFields()
+        },
+        // Word Changed
+        wordChanged() {
+          // Change case and Replace invalid chars
+          this.wordChars = this.wordChars.toLowerCase().replace(/[^a-z*]/g, '*')
+
+          // Trim string
+          if (this.wordChars.length > this.wordLength)
+            this.wordChars = this.wordChars.slice(0, this.wordLength)
+
+          // Add chars
+          if (this.wordChars.length < this.wordLength)
+            this.wordChars = this.wordChars + '*'.repeat(this.wordLength - this.wordChars.length)
+        },
+        // Must have Changed
+        mustCharsChanged() {
+          // Remove duplicates, change case and Replace invalid chars
+          this.mustChars = [...new Set(this.mustChars.toLowerCase().split(''))]
+            .join('')
+            .replace(/[^a-z]/g, '*')
+
+          // Trim string
+          if (this.mustChars.length > this.wordLength)
+            this.mustChars = this.mustChars.slice(0, this.wordLength)
+
+          // Replace invalid chars
+          this.mustChars = this.mustChars.toLowerCase().replace(/[^a-z]/g, '')
+        },
+        // Can Have Changed
+        canCharsChanged() {
+          // Remove duplicates, change case and Replace invalid chars
+          this.canChars = [...new Set(this.canChars.toLowerCase().split(''))]
+            .join('')
+            .replace(/[^a-z]/g, '*')
+
+          // Replace invalid chars
+          this.canChars = this.canChars.toLowerCase().replace(/[^a-z]/g, '')
+        },
+        // Filter words
+        filterWords() {
+          // Chars for regex
+          let otherChars = this.canChars === ''
+            ? 'a-z'
+            : Array.from(
+              new Set((this.wordChars.replace(/[*]/g, '') + this.mustChars + this.canChars).split(''))
+            ).join('')
+
+          // Word Regex
+          let wordRegex = new RegExp(this.wordChars.replace(/[*]/g, `[${otherChars}]`))
+
+          // Apply filter
+          this.filteredWords = this.allWords.filter(w => {
+            if (w.length != this.wordLength || !wordRegex.test(w)) return false
+            if (this.mustChars !== '' && this.mustChars.split('').some(mc => !w.includes(mc))) return false
+            return true
+          })
+        }
+      }
+    }).mount('#app')
+  </script>
+
+</body>
+
+</html>
