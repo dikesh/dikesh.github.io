@@ -65,9 +65,8 @@
           <div class="field-body">
             <div class="field is-narrow">
               <div class="control">
-                <input class="input" type="text" placeholder="Letters"
-                  v-model.trim="wordChars"
-                  @blur="wordChanged">
+                <input class="input" type="text" placeholder="*l*ck"
+                  v-model.trim="wordChars" @blur="wordChanged">
               </div>
               <p class="help">Max letters: {{wordLength}}</p>
               <p class="help">* - Any Letter</p>
@@ -82,9 +81,8 @@
           <div class="field-body">
             <div class="field is-narrow">
               <div class="control">
-                <input class="input" type="text" placeholder="Must have"
-                  v-model.trim="mustChars"
-                  @blur="mustCharsChanged">
+                <input class="input" type="text" placeholder="b"
+                  v-model.trim="mustChars" @blur="mustCharsChanged">
               </div>
               <p class="help">Max letters: {{wordLength}}</p>
             </div>
@@ -98,10 +96,8 @@
           <div class="field-body">
             <div class="field is-narrow">
               <div class="control">
-                <input class="input" type="text"
-                  placeholder="Can have Letters"
-                  v-model.trim="canChars"
-                  @blur="canCharsChanged">
+                <input class="input" type="text" placeholder="afjov"
+                  v-model.trim="canChars" @blur="canCharsChanged">
               </div>
             </div>
           </div>
